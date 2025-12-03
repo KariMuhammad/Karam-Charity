@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CharityChain - Decentralized Giving on Celo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ethers.js v5.7.2 for robust Web3 support -->
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" type="application/javascript"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            overflow-x: hidden;
+        }
+        
+        /* Color Palette: Deep Blue & Teal */
+        .gradient-hero {
+            background: linear-gradient(135deg, #0F2027 0%, #203A43 50%, #2C5364 100%);
+        }
+        
+        .gradient-teal {
+            background: linear-gradient(135deg, #16a085 0%, #1abc9c 100%);
+        }
+        
+        .gradient-blue-teal {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 50%, #1abc9c 100%);
+        }
+        
+        /* View Management */
+        .view-section {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .view-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Modern Button Styles */
+        .btn-modern {
+            border-radius: 9999px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #16a085 0%, #1abc9c 100%);
+        }
+        
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
+        }
+        
+        .btn-outline {
+            border: 2px solid #1abc9c;
+            color: #1abc9c;
+            background: transparent;
+        }
+        
+        .btn-outline:hover {
+            background: #1abc9c;
+            color: white;
+        }
+        
+        /* Campaign Cards */
+        .campaign-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 24px;
+            overflow: hidden;
+        }
+        
+        .campaign-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        }
+        
+        /* Progress Bar */
+        .progress-bar {
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(90deg, #16a085 0%, #1abc9c 100%);
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 32, 39, 0.85);
+            backdrop-filter: blur(10px);
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 24px;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Notification Toast */
+        .notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            z-index: 2000;
+            animation: slideInRight 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            max-width: 400px;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification.success {
+            background: linear-gradient(135deg, #16a085 0%, #1abc9c 100%);
+        }
+        
+        .notification.error {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+        
+        .notification.info {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+        
+        /* Nav Link Active State */
+        .nav-link {
+            position: relative;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link.active {
+            color: #1abc9c;
+        }
+        
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #16a085 0%, #1abc9c 100%);
+            border-radius: 2px;
+        }
+        
+        /* Glass Effect */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Stat Card Animation */
+        .stat-card {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .stat-card:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+        
+        .stat-card:nth-child(3) {
+            animation-delay: 1s;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-xl sticky top-0 z-50 border-b-2 border-gray-100">
+        <div class="container mx-auto px-6 py-5">
+            <div class="flex justify-between items-center">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 gradient-teal rounded-full flex items-center justify-center shadow-lg">
+                        <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <span class="text-2xl font-bold bg-gradient-to-r from-gray-800 to-teal-600 bg-clip-text text-transparent">CharityChain</span>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#" onclick="showView('home'); return false;" class="nav-link active text-gray-700 hover:text-teal-600 font-semibold text-lg transition-colors pb-2">Home</a>
+                    <a href="#" onclick="showView('campaigns'); return false;" class="nav-link text-gray-700 hover:text-teal-600 font-semibold text-lg transition-colors pb-2">Campaigns</a>
+                </div>
+                
+                <!-- Connect Wallet Button -->
+                <button id="connectWalletBtn" onclick="handleWalletConnect()" class="btn-modern btn-gradient text-white px-8 py-3">
+                    <span class="flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        </svg>
+                        <span id="btnText">Connect Wallet</span>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HOME VIEW -->
+    <section id="homeView" class="view-section active">
+        <!-- Hero Section -->
+        <div class="gradient-hero text-white py-32">
+            <div class="container mx-auto px-6 text-center">
+                <h1 class="text-6xl md:text-7xl font-black mb-8 leading-tight">
+                    Transparent Giving.<br>
+                    <span class="text-teal-400">Powered by Blockchain.</span>
+                </h1>
+                <p class="text-xl md:text-2xl mb-12 text-gray-300 max-w-4xl mx-auto leading-relaxed">
+                    Join the future of philanthropy on Celo. Every donation is transparent, 
+                    traceable, and makes a real impact on communities worldwide.
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                    <button onclick="showView('campaigns')" class="btn-modern btn-gradient text-white px-10 py-4 text-lg">
+                        Explore Campaigns
+                    </button>
+                    <button class="btn-modern btn-outline text-white px-10 py-4 text-lg">
+                        Learn More
+                    </button>
+                </div>
+                
+                <!-- Impact Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-24 max-w-5xl mx-auto">
+                    <div class="stat-card glass-effect rounded-3xl p-8 transform hover:scale-105 transition-all duration-300">
+                        <div class="text-5xl font-black mb-3" id="statDonations">0</div>
+                        <div class="text-teal-300 text-lg font-semibold uppercase tracking-wide">Total Donations</div>
+                    </div>
+                    <div class="stat-card glass-effect rounded-3xl p-8 transform hover:scale-105 transition-all duration-300">
+                        <div class="text-5xl font-black mb-3" id="statCampaigns">3</div>
+                        <div class="text-teal-300 text-lg font-semibold uppercase tracking-wide">Active Campaigns</div>
+                    </div>
+                    <div class="stat-card glass-effect rounded-3xl p-8 transform hover:scale-105 transition-all duration-300">
+                        <div class="text-5xl font-black mb-3" id="statRaised">0 CELO</div>
+                        <div class="text-teal-300 text-lg font-semibold uppercase tracking-wide">Total Raised</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Features Section -->
+        <div class="py-24 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 class="text-5xl font-bold text-gray-900 mb-4">Why Choose CharityChain?</h2>
+                    <p class="text-xl text-gray-600">Blockchain-powered transparency meets global impact</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div class="text-center group">
+                        <div class="w-20 h-20 gradient-teal rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-xl">
+                            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3">100% Transparent</h3>
+                        <p class="text-gray-600 leading-relaxed">Every transaction is recorded on the Celo blockchain. Track exactly where your donation goes.</p>
+                    </div>
+                    
+                    <div class="text-center group">
+                        <div class="w-20 h-20 gradient-teal rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-xl">
+                            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3">Instant Impact</h3>
+                        <p class="text-gray-600 leading-relaxed">Donations reach beneficiaries directly without intermediaries or delays.</p>
+                    </div>
+                    
+                    <div class="text-center group">
+                        <div class="w-20 h-20 gradient-teal rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-xl">
+                            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3">Global Reach</h3>
+                        <p class="text-gray-600 leading-relaxed">Support causes anywhere in the world with borderless cryptocurrency donations.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CAMPAIGNS VIEW -->
+    <section id="campaignsView" class="view-section">
+        <div class="gradient-blue-teal py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-20">
+                    <h2 class="text-5xl md:text-6xl font-black text-white mb-6">Active Campaigns</h2>
+                    <p class="text-xl md:text-2xl text-gray-200">Support causes that matter to you</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="campaignsGrid">
+                    <!-- Campaign cards will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- DONATE MODAL -->
+    <div id="donateModal" class="modal">
+        <div class="modal-content bg-white max-w-4xl w-full mx-4 overflow-hidden shadow-2xl">
+            <!-- Campaign Image Header -->
+            <div class="relative">
+                <img id="modalImage" class="w-full h-96 object-cover" src="" alt="Campaign">
+                <button onclick="closeModal()" class="absolute top-6 right-6 bg-white rounded-full p-3 shadow-2xl hover:bg-gray-100 transition-all transform hover:scale-110">
+                    <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="p-10">
+                <h3 id="modalTitle" class="text-4xl font-black text-gray-900 mb-4"></h3>
+                <p id="modalDescription" class="text-gray-700 text-lg mb-8 leading-relaxed"></p>
+                
+                <!-- Progress Section -->
+                <div class="mb-10">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-sm font-bold text-gray-600 uppercase tracking-wide">Campaign Progress</span>
+                        <span class="text-lg font-black text-teal-600" id="modalProgress">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-5 overflow-hidden shadow-inner">
+                        <div id="modalProgressBar" class="progress-bar h-full rounded-full"></div>
+                    </div>
+                    <div class="flex justify-between mt-4">
+                        <div>
+                            <span class="text-sm text-gray-600">Raised</span>
+                            <div class="text-2xl font-black text-gray-900" id="modalRaised">0 CELO</div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm text-gray-600">Goal</span>
+                            <div class="text-2xl font-black text-gray-900" id="modalGoal">0 CELO</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Donation Form -->
+                <div class="bg-gradient-to-br from-teal-50 to-blue-50 rounded-3xl p-8 shadow-inner">
+                    <h4 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <svg class="w-7 h-7 mr-3 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/>
+                        </svg>
+                        Make a Donation
+                    </h4>
+                    
+                    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
+                        <input 
+                            type="number" 
+                            id="donationAmount" 
+                            placeholder="Enter amount in CELO" 
+                            step="0.01"
+                            min="0.01"
+                            class="flex-1 px-6 py-4 border-2 border-teal-300 rounded-2xl focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-200 transition text-lg font-semibold"
+                        >
+                        <button 
+                            onclick="donate()" 
+                            id="donateBtn"
+                            class="btn-modern btn-gradient text-white px-10 py-4 text-lg whitespace-nowrap"
+                        >
+                            Donate Now
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Amount Buttons -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <button onclick="setDonationAmount(0.5)" class="bg-white hover:bg-teal-50 text-teal-700 font-bold py-3 rounded-xl border-2 border-teal-200 hover:border-teal-400 transition-all transform hover:scale-105">
+                            0.5 CELO
+                        </button>
+                        <button onclick="setDonationAmount(1)" class="bg-white hover:bg-teal-50 text-teal-700 font-bold py-3 rounded-xl border-2 border-teal-200 hover:border-teal-400 transition-all transform hover:scale-105">
+                            1 CELO
+                        </button>
+                        <button onclick="setDonationAmount(5)" class="bg-white hover:bg-teal-50 text-teal-700 font-bold py-3 rounded-xl border-2 border-teal-200 hover:border-teal-400 transition-all transform hover:scale-105">
+                            5 CELO
+                        </button>
+                        <button onclick="setDonationAmount(10)" class="bg-white hover:bg-teal-50 text-teal-700 font-bold py-3 rounded-xl border-2 border-teal-200 hover:border-teal-400 transition-all transform hover:scale-105">
+                            10 CELO
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Campaign Metadata -->
+                <div class="mt-8 pt-8 border-t-2 border-gray-200">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <span class="text-sm text-gray-600 font-semibold">Campaign ID</span>
+                            <div id="modalId" class="text-xl font-bold text-gray-900 mt-1"></div>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <span class="text-sm text-gray-600 font-semibold">Total Donors</span>
+                            <div id="modalDonors" class="text-xl font-bold text-gray-900 mt-1">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="gradient-hero text-white py-16">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-6 md:mb-0 text-center md:text-left">
+                    <div class="flex items-center justify-center md:justify-start space-x-3 mb-4">
+                        <div class="w-10 h-10 gradient-teal rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <span class="text-2xl font-bold">CharityChain</span>
+                    </div>
+                    <p class="text-gray-300 text-lg">Transparent giving on Celo Blockchain</p>
+                </div>
+                <div class="text-center md:text-right">
+                    <p class="text-gray-300 text-lg font-semibold">Built for Celo Proof of Ship Season 10 🚢</p>
+                    <p class="text-gray-400 mt-2">&copy; 2025 CharityChain. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ==================== CONFIGURATION ====================
+        // IMPORTANT: Replace with your deployed contract address after deployment
+        const contractAddress = "WAITING_FOR_DEPLOYMENT";
+        
+        const contractABI = [
+            "function campaignCount() view returns (uint256)",
+            "function campaigns(uint256) view returns (uint256 id, string title, string description, string imageUrl, uint256 goalAmount, uint256 raisedAmount, address owner, bool isActive, uint256 createdAt)",
+            "function getCampaign(uint256) view returns (uint256 id, string title, string description, string imageUrl, uint256 goalAmount, uint256 raisedAmount, address owner, bool isActive, uint256 createdAt)",
+            "function donate(uint256) payable",
+            "function getActiveCampaigns() view returns (uint256[])",
+            "function getDonorCount(uint256) view returns (uint256)"
+        ];
+        
+        // Celo Alfajores Testnet Configuration
+        const CELO_ALFAJORES = {
+            chainId: '0xaef3', // 44787 in decimal
+            chainName: 'Celo Alfajores Testnet',
+            nativeCurrency: {
+                name: 'CELO',
+                symbol: 'CELO',
+                decimals: 18
+            },
+            rpcUrls: ['https://alfajores-forno.celo-testnet.org'],
+            blockExplorerUrls: ['https://alfajores.celoscan.io']
+        };
+        
+        // ==================== GLOBAL STATE ====================
+        let provider;
+        let signer;
+        let contract;
+        let userAddress;
+        let currentCampaignId;
+        let currentView = 'home';
+        
+        // ==================== GLOBAL WALLET HANDLER (Accessible from onclick) ====================
+        window.handleWalletConnect = async function() {
+            console.log('🔘 Button clicked! Starting wallet connection...');
+            await connectWallet();
+        };
+        
+        // Campaign data with specified images
+        const campaigns = [
+            {
+                id: 1,
+                title: "Clean Water for Rural Communities",
+                description: "Help us bring clean, safe drinking water to remote villages across Africa. Your donation will fund water purification systems, wells, and sustainable infrastructure that will benefit thousands of families for generations to come. Every drop counts.",
+                imageUrl: "https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=800&q=80",
+                goalAmount: ethers.utils.parseEther("100"),
+                raisedAmount: ethers.utils.parseEther("0"),
+                isActive: true
+            },
+            {
+                id: 2,
+                title: "Education for All Children",
+                description: "Every child deserves quality education regardless of their background. Support our mission to build schools, provide learning materials, train teachers, and offer scholarships in underserved communities. Together we can break the cycle of poverty through education and empower the next generation.",
+                imageUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&q=80",
+                goalAmount: ethers.utils.parseEther("150"),
+                raisedAmount: ethers.utils.parseEther("0"),
+                isActive: true
+            },
+            {
+                id: 3,
+                title: "Emergency Relief Fund",
+                description: "Natural disasters and humanitarian crises can strike without warning. This emergency fund provides immediate aid including food, clean water, medical supplies, temporary shelter, and long-term rebuilding support to communities affected by disasters worldwide. Be ready to help when it matters most.",
+                imageUrl: "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&q=80",
+                goalAmount: ethers.utils.parseEther("200"),
+                raisedAmount: ethers.utils.parseEther("0"),
+                isActive: true
+            }
+        ];
+        
+        // ==================== VIEW MANAGEMENT ====================
+        function showView(viewName) {
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(view => {
+                view.classList.remove('active');
+            });
+            
+            // Show selected view
+            document.getElementById(viewName + 'View').classList.add('active');
+            
+            // Update nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            currentView = viewName;
+            
+            // Load campaigns if navigating to campaigns view
+            if (viewName === 'campaigns') {
+                renderCampaigns();
+            }
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // ==================== WALLET CONNECTION ====================
+        async function connectWallet() {
+            try {
+                console.log('🔍 Step 1: Checking for MetaMask...');
+                
+                // Check if MetaMask is installed
+                if (typeof window.ethereum === 'undefined') {
+                    console.error('❌ MetaMask not found!');
+                    alert('Please install MetaMask wallet to continue!\n\nVisit: https://metamask.io/download/');
+                    window.open('https://metamask.io/download/', '_blank');
+                    return;
+                }
+                
+                console.log('✅ MetaMask found!');
+                console.log('🔍 Step 2: Requesting account access...');
+                
+                // Request account access
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                
+                console.log('✅ Account access granted!');
+                console.log('📝 Account:', accounts[0]);
+                
+                userAddress = accounts[0];
+                
+                // Initialize provider and signer
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                
+                console.log('🔍 Step 3: Checking network...');
+                
+                // Check current network
+                const network = await provider.getNetwork();
+                console.log('📡 Current network:', network.chainId, network.name);
+                
+                // Switch to Celo Alfajores if needed
+                if (network.chainId !== 44787) {
+                    console.log('🔄 Need to switch to Celo Alfajores...');
+                    await switchToCeloAlfajores();
+                } else {
+                    console.log('✅ Already on Celo Alfajores!');
+                    onWalletConnected();
+                }
+                
+            } catch (error) {
+                console.error('❌ Wallet connection error:', error);
+                
+                if (error.code === 4001) {
+                    alert('Connection rejected!\n\nPlease approve the MetaMask request to connect your wallet.');
+                } else {
+                    alert('Failed to connect wallet:\n\n' + error.message);
+                }
+            }
+        }
+        
+        async function switchToCeloAlfajores() {
+            try {
+                console.log('🔄 Attempting to switch to Celo Alfajores (Chain ID: 0xaef3)...');
+                
+                // Try to switch to Celo Alfajores
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: CELO_ALFAJORES.chainId }],
+                });
+                
+                console.log('✅ Network switched successfully!');
+                onWalletConnected();
+                
+            } catch (switchError) {
+                console.log('⚠️ Switch error:', switchError.code, switchError.message);
+                
+                // Chain not added to MetaMask (error code 4902)
+                if (switchError.code === 4902) {
+                    try {
+                        console.log('➕ Network not found. Adding Celo Alfajores...');
+                        
+                        // Add the chain to MetaMask
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [CELO_ALFAJORES],
+                        });
+                        
+                        console.log('✅ Network added successfully!');
+                        onWalletConnected();
+                        
+                    } catch (addError) {
+                        console.error('❌ Error adding network:', addError);
+                        alert('Failed to add Celo Alfajores network.\n\nPlease add it manually in MetaMask:\n\n' +
+                              'Network Name: Celo Alfajores Testnet\n' +
+                              'RPC URL: https://alfajores-forno.celo-testnet.org\n' +
+                              'Chain ID: 44787\n' +
+                              'Symbol: CELO');
+                    }
+                } else if (switchError.code === 4001) {
+                    alert('Network switch rejected!\n\nPlease approve the network switch in MetaMask.');
+                } else {
+                    console.error('❌ Error switching network:', switchError);
+                    alert('Failed to switch network.\n\nPlease switch to Celo Alfajores manually in MetaMask.');
+                }
+            }
+        }
+        
+        function onWalletConnected() {
+            console.log('🎉 Wallet connected successfully!');
+            console.log('👛 Address:', userAddress);
+            
+            const shortAddress = `${userAddress.substring(0, 6)}...${userAddress.substring(38)}`;
+            
+            const connectBtn = document.getElementById('connectWalletBtn');
+            if (connectBtn) {
+                // Update button text
+                connectBtn.innerHTML = `
+                    <span class="flex items-center space-x-2">
+                        <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                        <span>✅ Connected: ${shortAddress}</span>
+                    </span>
+                `;
+                
+                // Disable button after connection
+                connectBtn.disabled = true;
+                connectBtn.style.opacity = '0.8';
+                connectBtn.style.cursor = 'not-allowed';
+                connectBtn.onclick = null; // Remove click handler
+                
+                console.log('✅ Button updated and disabled');
+            }
+            
+            // Show browser alert
+            alert('Wallet Connected Successfully!\n\n' +
+                  '✅ Connected to: ' + shortAddress + '\n' +
+                  '✅ Network: Celo Alfajores Testnet\n\n' +
+                  'You can now donate to campaigns!');
+            
+            console.log('✅ Alert shown');
+            
+            // Show success notification
+            showNotification('Wallet connected successfully! 🎉', 'success');
+            
+            // Initialize contract if address is set
+            if (contractAddress !== "WAITING_FOR_DEPLOYMENT") {
+                console.log('📝 Initializing contract...');
+                contract = new ethers.Contract(contractAddress, contractABI, signer);
+                loadCampaignsFromBlockchain();
+            } else {
+                console.log('ℹ️ Running in demo mode (no contract deployed)');
+                renderCampaigns();
+                updateStats();
+            }
+        }
+        
+        // ==================== CAMPAIGN RENDERING ====================
+        async function loadCampaignsFromBlockchain() {
+            try {
+                showNotification('Loading campaigns from blockchain...', 'info');
+                
+                const campaignCount = await contract.campaignCount();
+                const loadedCampaigns = [];
+                
+                for (let i = 1; i <= campaignCount; i++) {
+                    const campaign = await contract.getCampaign(i);
+                    loadedCampaigns.push({
+                        id: campaign.id.toNumber(),
+                        title: campaign.title,
+                        description: campaign.description,
+                        imageUrl: campaign.imageUrl,
+                        goalAmount: campaign.goalAmount,
+                        raisedAmount: campaign.raisedAmount,
+                        isActive: campaign.isActive
+                    });
+                }
+                
+                // Update global campaigns array
+                campaigns.length = 0;
+                campaigns.push(...loadedCampaigns.filter(c => c.isActive));
+                
+                renderCampaigns();
+                updateStats();
+                
+                showNotification('Campaigns loaded successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error loading campaigns:', error);
+                showNotification('Using demo campaign data.', 'info');
+                renderCampaigns();
+                updateStats();
+            }
+        }
+        
+        function renderCampaigns() {
+            const grid = document.getElementById('campaignsGrid');
+            grid.innerHTML = '';
+            
+            campaigns.forEach(campaign => {
+                const raised = parseFloat(ethers.utils.formatEther(campaign.raisedAmount));
+                const goal = parseFloat(ethers.utils.formatEther(campaign.goalAmount));
+                const percentage = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0;
+                
+                const card = document.createElement('div');
+                card.className = 'campaign-card bg-white shadow-2xl cursor-pointer';
+                card.onclick = () => openDonateModal(campaign);
+                
+                card.innerHTML = `
+                    <div class="relative overflow-hidden h-64">
+                        <img src="${campaign.imageUrl}" alt="${campaign.title}" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-500">
+                        <div class="absolute top-4 right-4 bg-teal-500 text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg">
+                            Active
+                        </div>
+                    </div>
+                    
+                    <div class="p-8">
+                        <h3 class="text-2xl font-black text-gray-900 mb-4">${campaign.title}</h3>
+                        <p class="text-gray-600 mb-6 leading-relaxed line-clamp-3">${campaign.description}</p>
+                        
+                        <!-- Progress Bar -->
+                        <div class="mb-6">
+                            <div class="flex justify-between text-sm mb-2 font-semibold">
+                                <span class="text-gray-600">Progress</span>
+                                <span class="text-teal-600">${percentage.toFixed(1)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                                <div class="progress-bar h-full rounded-full" style="width: ${percentage}%;"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Stats -->
+                        <div class="flex justify-between items-end mb-6">
+                            <div>
+                                <div class="text-3xl font-black text-gray-900">${raised.toFixed(2)} CELO</div>
+                                <div class="text-sm text-gray-500 font-semibold">raised of ${goal.toFixed(0)} CELO goal</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Donate Button -->
+                        <button class="btn-modern btn-gradient text-white w-full py-4 text-lg font-bold">
+                            Donate Now
+                        </button>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        // ==================== MODAL MANAGEMENT ====================
+        async function openDonateModal(campaign) {
+            currentCampaignId = campaign.id;
+            
+            const raised = parseFloat(ethers.utils.formatEther(campaign.raisedAmount));
+            const goal = parseFloat(ethers.utils.formatEther(campaign.goalAmount));
+            const percentage = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0;
+            
+            // Populate modal
+            document.getElementById('modalImage').src = campaign.imageUrl;
+            document.getElementById('modalTitle').textContent = campaign.title;
+            document.getElementById('modalDescription').textContent = campaign.description;
+            document.getElementById('modalProgress').textContent = percentage.toFixed(1) + '%';
+            document.getElementById('modalProgressBar').style.width = percentage + '%';
+            document.getElementById('modalRaised').textContent = raised.toFixed(2) + ' CELO';
+            document.getElementById('modalGoal').textContent = goal.toFixed(0) + ' CELO';
+            document.getElementById('modalId').textContent = '#' + campaign.id;
+            
+            // Get donor count if contract is available
+            if (contract) {
+                try {
+                    const donorCount = await contract.getDonorCount(campaign.id);
+                    document.getElementById('modalDonors').textContent = donorCount.toString();
+                } catch (error) {
+                    document.getElementById('modalDonors').textContent = '0';
+                }
+            } else {
+                document.getElementById('modalDonors').textContent = '0';
+            }
+            
+            // Show modal
+            document.getElementById('donateModal').classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('donateModal').classList.remove('active');
+            document.getElementById('donationAmount').value = '';
+        }
+        
+        function setDonationAmount(amount) {
+            document.getElementById('donationAmount').value = amount;
+        }
+        
+        // ==================== DONATION LOGIC ====================
+        async function donate() {
+            const amountInput = document.getElementById('donationAmount');
+            const amount = amountInput.value;
+            
+            // Validation
+            if (!amount || parseFloat(amount) <= 0) {
+                showNotification('Please enter a valid donation amount!', 'error');
+                return;
+            }
+            
+            if (!userAddress) {
+                showNotification('Please connect your wallet first!', 'error');
+                await connectWallet();
+                return;
+            }
+            
+            // Simulate donation if contract not deployed
+            if (!contract || contractAddress === "WAITING_FOR_DEPLOYMENT") {
+                const donateBtn = document.getElementById('donateBtn');
+                donateBtn.disabled = true;
+                donateBtn.innerHTML = '<span class="spinner mr-2"></span>Processing...';
+                
+                // Simulate transaction delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                showNotification(`Thank you for donating ${amount} CELO! 🎉 (Demo Mode)`, 'success');
+                
+                donateBtn.disabled = false;
+                donateBtn.textContent = 'Donate Now';
+                amountInput.value = '';
+                
+                return;
+            }
+            
+            // Real blockchain donation
+            try {
+                const donateBtn = document.getElementById('donateBtn');
+                donateBtn.disabled = true;
+                donateBtn.innerHTML = '<span class="spinner mr-2"></span>Processing...';
+                
+                showNotification('Preparing your donation transaction...', 'info');
+                
+                const tx = await contract.donate(currentCampaignId, {
+                    value: ethers.utils.parseEther(amount)
+                });
+                
+                showNotification('Transaction submitted! Waiting for confirmation...', 'info');
+                
+                await tx.wait();
+                
+                showNotification(`Successfully donated ${amount} CELO! 🎉`, 'success');
+                
+                // Reload campaigns
+                await loadCampaignsFromBlockchain();
+                
+                // Update modal
+                const updatedCampaign = await contract.getCampaign(currentCampaignId);
+                const raised = parseFloat(ethers.utils.formatEther(updatedCampaign.raisedAmount));
+                const goal = parseFloat(ethers.utils.formatEther(updatedCampaign.goalAmount));
+                const percentage = goal > 0 ? Math.min((raised / goal) * 100, 100) : 0;
+                
+                document.getElementById('modalProgress').textContent = percentage.toFixed(1) + '%';
+                document.getElementById('modalProgressBar').style.width = percentage + '%';
+                document.getElementById('modalRaised').textContent = raised.toFixed(2) + ' CELO';
+                
+                amountInput.value = '';
+                
+            } catch (error) {
+                console.error('Donation error:', error);
+                
+                let errorMsg = 'Donation failed! ';
+                if (error.code === 4001) {
+                    errorMsg += 'Transaction was rejected.';
+                } else if (error.message) {
+                    errorMsg += error.message;
+                } else {
+                    errorMsg += 'Please try again.';
+                }
+                
+                showNotification(errorMsg, 'error');
+                
+            } finally {
+                const donateBtn = document.getElementById('donateBtn');
+                donateBtn.disabled = false;
+                donateBtn.textContent = 'Donate Now';
+            }
+        }
+        
+        // ==================== STATS UPDATE ====================
+        function updateStats() {
+            let totalRaised = ethers.BigNumber.from(0);
+            
+            campaigns.forEach(campaign => {
+                totalRaised = totalRaised.add(campaign.raisedAmount);
+            });
+            
+            const raisedInCelo = parseFloat(ethers.utils.formatEther(totalRaised)).toFixed(2);
+            
+            document.getElementById('statCampaigns').textContent = campaigns.filter(c => c.isActive).length;
+            document.getElementById('statRaised').textContent = raisedInCelo + ' CELO';
+        }
+        
+        // ==================== NOTIFICATIONS ====================
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => notification.remove(), 300);
+            }, 4500);
+        }
+        
+        // ==================== INITIALIZATION & EVENT LISTENERS ====================
+        // Wait for DOM to be fully loaded
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ DOM Content Loaded - App initialized');
+            console.log('🔍 Checking button availability...');
+            
+            const connectBtn = document.getElementById('connectWalletBtn');
+            if (connectBtn) {
+                console.log('✅ Connect Wallet button found in DOM');
+                console.log('✅ onclick handler should be attached via HTML');
+            } else {
+                console.error('❌ Connect Wallet button NOT found!');
+            }
+            
+            // Close modal on outside click
+            const donateModal = document.getElementById('donateModal');
+            if (donateModal) {
+                donateModal.addEventListener('click', (e) => {
+                    if (e.target.id === 'donateModal') {
+                        closeModal();
+                    }
+                });
+            }
+            
+            // Wallet event listeners for account/chain changes
+            if (typeof window.ethereum !== 'undefined') {
+                console.log('✅ window.ethereum detected');
+                
+                window.ethereum.on('accountsChanged', (accounts) => {
+                    console.log('🔄 Account changed:', accounts);
+                    if (accounts.length === 0) {
+                        console.log('🔄 No accounts, reloading...');
+                        location.reload();
+                    } else {
+                        userAddress = accounts[0];
+                        const shortAddress = `${userAddress.substring(0, 6)}...${userAddress.substring(38)}`;
+                        const btn = document.getElementById('connectWalletBtn');
+                        if (btn) {
+                            btn.innerHTML = `
+                                <span class="flex items-center space-x-2">
+                                    <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                                    <span>✅ Connected: ${shortAddress}</span>
+                                </span>
+                            `;
+                            btn.disabled = true;
+                        }
+                    }
+                });
+                
+                window.ethereum.on('chainChanged', () => {
+                    console.log('🔄 Chain changed, reloading...');
+                    location.reload();
+                });
+            } else {
+                console.log('⚠️ window.ethereum not detected (MetaMask not installed?)');
+            }
+            
+            // Load initial campaigns
+            console.log('📊 Loading campaigns...');
+            renderCampaigns();
+            updateStats();
+            console.log('✅ Initial setup complete!');
+        });
+    </script>
+</body>
+</html>
